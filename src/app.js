@@ -1,4 +1,4 @@
-const bcrypt  = require ("bcryptjs")
+const bcrypt = require("bcryptjs");
 
 const express = require("express");
 const app = express();
@@ -6,6 +6,7 @@ const app = express();
 const connectDb = require("./config/database");
 const User = require("../models/user");
 const { validateSignUPSchema } = require("./helpers/validation");
+const { isMACAddress } = require("validator");
 
 app.use(express.json());
 
@@ -34,6 +35,25 @@ app.post("/signup", async (req, res) => {
   } catch (error) {
     res.send("something went wrong" + error.message);
     console.log("something went wrong" + error.message);
+  }
+});
+
+app.post("/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      throw new Error("Email is not found");
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      throw new Error("Password is not Matched");
+    }
+    return res.status(200).json({ message: "Login Successfully" });
+  } catch (error) {
+    console.log("Somnethign went wrong" + error);
   }
 });
 

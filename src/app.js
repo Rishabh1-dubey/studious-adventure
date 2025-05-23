@@ -6,7 +6,8 @@ const app = express();
 const connectDb = require("./config/database");
 const User = require("../models/user");
 const { validateSignUPSchema } = require("./helpers/validation");
-const { isMACAddress } = require("validator");
+
+const jwt = require("jsonwebtoken");
 
 app.use(express.json());
 
@@ -16,8 +17,8 @@ app.post("/signup", async (req, res) => {
     validateSignUPSchema(req);
 
     //Encrypt the Password
-
     const { firstName, lastName, email, password } = req.body;
+    console.log("checking my request body ", req.body);
 
     const hashPassword = await bcrypt.hash(password, 10);
 
@@ -30,8 +31,36 @@ app.post("/signup", async (req, res) => {
       password: hashPassword,
     });
 
-    await user.save();
-    res.send("Data added successfully");
+    const savedUser = await user.save();
+
+    const payload = {
+      user: {
+        user: savedUser._id,
+      },
+    };
+
+    //Implementation of jwt
+
+    jwt.sign(
+      payload,
+      "ridgdfdkklgdfgjldg",
+      { expiresIn: "10h" },
+      (err, token) => {
+        if (err) throw err;
+
+        res.status(201).json({
+          user: {
+            _id: savedUser._id,
+            firstName: savedUser.firstName,
+            lastName: savedUser.lastName,
+            email: savedUser.email,
+          },
+          token,
+        });
+      }
+    );
+
+    
   } catch (error) {
     res.send("something went wrong" + error.message);
     console.log("something went wrong" + error.message);
